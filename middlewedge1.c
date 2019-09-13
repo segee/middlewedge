@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
 }
 void do_inputs(FILE * fpserial)
 {
-   char *file="/Volumes/ramdisk/b1_inputs.txt";
+   char *file="./i_o_directory/b1_inputs.txt";
    FILE * fpfile;
    int value;
 
@@ -84,7 +84,7 @@ int read_value(FILE * fps)
 void do_outputs(FILE * fpserial)
 {
    FILE * fpfile;
-   char *file="/Volumes/ramdisk/b1_outputs.txt";
+   char *file="./i_o_directory/b1_outputs.txt";
    int value=1234;
    static int initialized=0;
    static int last_value=1234;
