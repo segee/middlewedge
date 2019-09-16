@@ -24,6 +24,13 @@ int main(int argc, char * argv[])
     tcgetattr(fileno(fpserial),&serial);
     cfmakeraw(&serial);
     tcsetattr(fileno(fpserial),TCSANOW,&serial);
+    printf("If you have not done so already: \n");
+    printf("     1) This program should be running in the same directory as the simulator\n");
+    printf("     2) You should have a directory in this directory that is ./i_o_directory\n");
+    printf("     3) You should have a ramdrive mounted to that directory\n");
+    printf "      mount -t tmpfs -o size=64k tmpfs ./i_o_directory\n");
+    printf(" You only need to do this once per boot\n");
+    
     
 
     while(1)
