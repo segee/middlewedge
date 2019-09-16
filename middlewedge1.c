@@ -2,6 +2,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
  
 void do_inputs(FILE * );
 void do_outputs(FILE *);
@@ -9,6 +11,7 @@ int read_value(FILE *);
 
 int main(int argc, char * argv[])
 {   FILE * fpserial;
+    struct termios serial;
     if( argc < 2)
     {  printf("You must specify a serial port\n"); exit(-1);
     }
@@ -18,6 +21,10 @@ int main(int argc, char * argv[])
       printf("Failed to open serial port %s\n",argv[1]);
       exit(-2);
     }
+    tcgetattr(fileno(fpserial),&serial);
+    cfmakeraw(&serial);
+    tcsetattr(fileno(fpserial),TCSANOW,&serial);
+    
 
     while(1)
     {
@@ -79,6 +86,8 @@ int read_value(FILE * fps)
   rewind(fps); 
  do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x29 %i",&value)==0);  
   //printf("Got the value %x\n",value);  
+
+  //printf("Buffer is %s \n",buffer);
   return (value);
 }
 void do_outputs(FILE * fpserial)
