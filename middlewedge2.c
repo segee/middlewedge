@@ -130,7 +130,7 @@ void do_outputs(FILE * fpserial)
    if(fpfile)
    {
       if(fscanf(fpfile,"LEDs:%i",&value))
-      {
+      { value=(~value)&0xff;
         fclose(fpfile);
            //printf("value is %x oldvalue is %x\n",value,last_value);
         if(!initialized){fprintf(fpserial,"W 0x24 0xff\n");initialized=1;}
