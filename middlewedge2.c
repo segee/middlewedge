@@ -60,16 +60,16 @@ void do_inputs(FILE * fpserial)
 
    static int oldvalue=1234;
    static int how_many_the_same=0;
-   struct inputs all_values;
+   struct inputs allvalues;
     value=read_go(fpserial);
     
     if(value!=oldvalue)
     {
-      all_values=read_allvalues(fpserial);
+      allvalues=read_allvalues(fpserial);
       fpfile=fopen(file,"w");
       if(fpfile)
       {
-         fprintf(fpfile,"Go:0x%x",allvalue.go); 
+         fprintf(fpfile,"Go:0x%x",allvalues.go); 
          fprintf(fpfile,"IA:0x%x",allvalues.ia);
          fprintf(fpfile,"IB:0x%x",allvalues.ib); 
          fprintf(fpfile,"Op:0x%x",allvalues.op);
@@ -116,7 +116,7 @@ int read_go(FILE * fps)
 //switch A is on port A  porta 0x22, ddra 0x21, pina 0x20
 //switch b is on port F portf 0x31, ddrf 0x30, pinf 0x2f)
 //op is port c bits 0-3 portc 0x28, ddrc 0x27, pinc 0x26
-// go is port e bit 0 port e 0x2e, ddre 0x2d, pind 0x2c
+// go is port e bit 0 port e 0x2e, ddre 0x2d, pine 0x2c
 struct inputs read_allvalues(FILE * fps)
 {   struct inputs values;
     static int initialized=0;
@@ -133,18 +133,20 @@ struct inputs read_allvalues(FILE * fps)
     fflush(fps);
     initialized=1;
    }
-   fprintf(fps,"R 0x2e\n");
-   fprintf(fps,"R 0x2e\n");
-   fprintf(fps,"R 0x2e\n");
-   fprintf(fps,"R 0x2e\n");
+   fprintf(fps,"R 0x2c\n");
+   fprintf(fps,"R 0x26\n");
+   fprintf(fps,"R 0x20\n");
+   fprintf(fps,"R 0x2f\n");
  
    fflush(fps);
+   rewind(fps)
  
- 
-   values.go=1;
-   values.ia=1;
-   values.ib=1;
-   values.op=1;
+       while(fgets(bufferr,sizeof(buffer),fps))
+       {  sscanf(buffer,"R 0x2c %i",&values.go);
+	         sscanf(buffer,"R 0x26 %i",&values.op);
+	         sscanf(buffer,"R 0x20 %i",&values.ia);
+	         sscanf(buffer,"R 0x2f %i",&values.ib);
+       }
    return values
 }
  
