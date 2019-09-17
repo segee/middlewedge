@@ -47,6 +47,11 @@ int main(int argc, char * argv[])
 //      usleep(100);
     }
 }
+
+//switch A is on port A  porta 0x22, ddra 0x21, pina 0x20
+//switch b is on port F portf 0x31, ddrf 0x30, pinf 0x2f)
+//op is port c bits 0-3 portc 0x28, ddrc 0x27, pinc 0x26
+// go is port e bit 0 port e 0x2e, ddre 0x2d, pind 0x2c
 void do_inputs(FILE * fpserial)
 {
    char *file="./i_o_directory/b2_inputs.txt";
@@ -56,8 +61,6 @@ void do_inputs(FILE * fpserial)
    static int oldvalue=1234;
    static int how_many_the_same=0;
    struct inputs all_values;
-  
-  
     value=read_go(fpserial);
     
     if(value!=oldvalue)
@@ -84,6 +87,10 @@ void do_inputs(FILE * fpserial)
     }
    
  }
+//switch A is on port A  porta 0x22, ddra 0x21, pina 0x20
+//switch b is on port F portf 0x31, ddrf 0x30, pinf 0x2f)
+//op is port c bits 0-3 portc 0x28, ddrc 0x27, pinc 0x26
+// go is port e bit 0 port e 0x2e, ddre 0x2d, pind 0x2c
 int read_go(FILE * fps)
 {
   int value;
@@ -91,23 +98,48 @@ int read_go(FILE * fps)
   char buffer[200];
   if(!initialized)
    {
-    fprintf(fps,"W 0x2a 0\n");
-    fprintf(fps,"W 0x2b 0xff\n");
+    fprintf(fps,"W 0x2d 0\n");    ///all inputs
+    fprintf(fps,"W 0x2e 0xff\n");  //enable pullups
     fflush(fps);
     initialized=1;
    }
-  fprintf(fps,"R 0x29\n");
+  fprintf(fps,"R 0x2e\n");
   fflush(fps);
 // printf("About to read \n"); 
   rewind(fps); 
- do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x29 %i",&value)==0);  
+ do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x2e %i",&value)==0);  
   //printf("Got the value %x\n",value);  
 
   //printf("Buffer is %s \n",buffer);
   return (value);
 }
+//switch A is on port A  porta 0x22, ddra 0x21, pina 0x20
+//switch b is on port F portf 0x31, ddrf 0x30, pinf 0x2f)
+//op is port c bits 0-3 portc 0x28, ddrc 0x27, pinc 0x26
+// go is port e bit 0 port e 0x2e, ddre 0x2d, pind 0x2c
 struct inputs read_allvalues(FILE * fps)
-{  struct inputs values;
+{   struct inputs values;
+    static int initialized=0;
+    char buffer[200];
+  if(!initialized)
+   {
+    fprintf(fps,"W 0x21 0\n");    ///all inputs
+   fprintf(fps,"W 0x30 0\n");    ///all inputs
+   fprintf(fps,"W 0x27 0\n");    ///all inputs
+   
+    fprintf(fps,"W 0x22 0xff\n");  //enable pullups
+   fprintf(fps,"W 0x31 0xff\n");  //enable pullups
+   fprintf(fps,"W 0x28 0xff\n");  //enable pullups
+    fflush(fps);
+    initialized=1;
+   }
+   fprintf(fps,"R 0x2e\n");
+   fprintf(fps,"R 0x2e\n");
+   fprintf(fps,"R 0x2e\n");
+   fprintf(fps,"R 0x2e\n");
+ 
+   fflush(fps);
+ 
  
    values.go=1;
    values.ia=1;
