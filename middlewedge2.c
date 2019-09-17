@@ -9,6 +9,13 @@ void do_inputs(FILE * );
 void do_outputs(FILE *);
 int read_value(FILE *);
 
+struct inputs 
+{  int go;
+   int ia;
+   int ib;
+   int op;
+};
+
 int main(int argc, char * argv[])
 {   FILE * fpserial;
     struct termios serial;
@@ -48,19 +55,21 @@ void do_inputs(FILE * fpserial)
 
    static int oldvalue=1234;
    static int how_many_the_same=0;
-   static int how_often=1000;
-   if(how_often<10) how_often++;
-   else
-   {
-    how_often=0;
-    value=read_value(fpserial);
-    value=~value&0xf;
+   struct inputs all_values;
+  
+  
+    value=read_go(fpserial);
+    
     if(value!=oldvalue)
     {
+      all_values=read_allvalues(fpserial);
       fpfile=fopen(file,"w");
       if(fpfile)
       {
-         fprintf(fpfile,"Switches:0x%x",value&0xf);
+         fprintf(fpfile,"Go:0x%x",allvalue.go); 
+         fprintf(fpfile,"IA:0x%x",allvalues.ia);
+         fprintf(fpfile,"IB:0x%x",allvalues.ib); 
+         fprintf(fpfile,"Op:0x%x",allvalues.op);
 //       printf("value is %x\n",value);
          fclose(fpfile);
          oldvalue=value;
@@ -73,9 +82,9 @@ void do_inputs(FILE * fpserial)
      how_many_the_same++;
      if(how_many_the_same>100){ oldvalue=1234 ; how_often=1000;}
     }
-   }
+   
  }
-int read_value(FILE * fps)
+int read_go(FILE * fps)
 {
   int value;
   static int initialized=0;
@@ -97,6 +106,18 @@ int read_value(FILE * fps)
   //printf("Buffer is %s \n",buffer);
   return (value);
 }
+struct inputs read_allvalues(FILE * fps)
+{  struct inputs values;
+ 
+   values.go=1;
+   values.ia=1;
+   values.ib=1;
+   values.op=1;
+   return values
+}
+ 
+}
+
 void do_outputs(FILE * fpserial)
 {
    FILE * fpfile;
@@ -113,7 +134,7 @@ void do_outputs(FILE * fpserial)
         fclose(fpfile);
            //printf("value is %x oldvalue is %x\n",value,last_value);
         if(!initialized){fprintf(fpserial,"W 0x24 0xff\n");initialized=1;}
-        if(value!=1234) if(last_value != value){fprintf(fpserial,"W 0x25 0x%x\n",value&0xf); last_value=value;fflush(fpserial);}
+        if(value!=1234) if(last_value != value){fprintf(fpserial,"W 0x25 0x%x\n",value&0xff); last_value=value;fflush(fpserial);}
        }
       else
       {
