@@ -124,12 +124,12 @@ struct inputs read_allvalues(FILE * fps)
   if(!initialized)
    {
     fprintf(fps,"W 0x21 0\n");    ///all inputs
-   fprintf(fps,"W 0x30 0\n");    ///all inputs
-   fprintf(fps,"W 0x27 0\n");    ///all inputs
+    fprintf(fps,"W 0x30 0\n");    ///all inputs
+    fprintf(fps,"W 0x27 0\n");    ///all inputs
    
     fprintf(fps,"W 0x22 0xff\n");  //enable pullups
-   fprintf(fps,"W 0x31 0xff\n");  //enable pullups
-   fprintf(fps,"W 0x28 0xff\n");  //enable pullups
+    fprintf(fps,"W 0x31 0xff\n");  //enable pullups
+    fprintf(fps,"W 0x28 0xff\n");  //enable pullups
     fflush(fps);
     initialized=1;
    }
@@ -140,9 +140,10 @@ struct inputs read_allvalues(FILE * fps)
  
    fflush(fps);
    rewind(fps)
- 
-       while(fgets(bufferr,sizeof(buffer),fps))
-       {  sscanf(buffer,"R 0x2c %i",&values.go);
+   values.ib=1234;
+       while(values.ib==1234)
+       {         fgets(bufferr,sizeof(buffer),fps);
+	         sscanf(buffer,"R 0x2c %i",&values.go);
 	         sscanf(buffer,"R 0x26 %i",&values.op);
 	         sscanf(buffer,"R 0x20 %i",&values.ia);
 	         sscanf(buffer,"R 0x2f %i",&values.ib);
