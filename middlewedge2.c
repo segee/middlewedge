@@ -73,10 +73,10 @@ void do_inputs(FILE * fpserial)
       fpfile=fopen(file,"w");
       if(fpfile)
       {
-         fprintf(fpfile,"Go:0x%x",allvalues.go); 
-         fprintf(fpfile,"IA:0x%x",allvalues.ia);
-         fprintf(fpfile,"IB:0x%x",allvalues.ib); 
-         fprintf(fpfile,"Op:0x%x",allvalues.op);
+         fprintf(fpfile,"Go:0x%x\n",allvalues.go); 
+         fprintf(fpfile,"IA:0x%x\n",allvalues.ia);
+         fprintf(fpfile,"IB:0x%x\n",allvalues.ib); 
+         fprintf(fpfile,"Op:0x%x\n",allvalues.op);
 //       printf("value is %x\n",value);
          fclose(fpfile);
          oldvalue=value;
