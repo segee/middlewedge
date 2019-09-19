@@ -87,7 +87,7 @@ void do_inputs(FILE * fpserial)
     else
     {
      how_many_the_same++;
-     if(how_many_the_same>100){ oldvalue=1234 ; how_often=1000;}
+     if(how_many_the_same>100){ oldvalue=1234 ; }
     }
    
  }
@@ -152,10 +152,9 @@ struct inputs read_allvalues(FILE * fps)
 	         sscanf(buffer,"R 0x20 %i",&values.ia);
 	         sscanf(buffer,"R 0x2f %i",&values.ib);
        }
-   return values
+   return values;
 }
  
-}
 
 void do_outputs(FILE * fpserial)
 {
