@@ -112,6 +112,7 @@ int read_go(FILE * fps)
 // printf("About to read \n"); 
   rewind(fps); 
  do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x2e %i",&value)==0);  
+value &=1;
   //printf("Got the value %x\n",value);  
 
   //printf("Buffer is %s \n",buffer);
@@ -152,6 +153,10 @@ struct inputs read_allvalues(FILE * fps)
 	         sscanf(buffer,"R 0x20 %i",&values.ia);
 	         sscanf(buffer,"R 0x2f %i",&values.ib);
        }
+   values.go &=1;
+   values.op = ~values.op&0xf;
+   values.ia = ~values.ia &0xff;
+   values.ib = ~values.ib &0xff;
    return values;
 }
  
