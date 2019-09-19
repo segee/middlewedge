@@ -143,7 +143,7 @@ struct inputs read_allvalues(FILE * fps)
    fprintf(fps,"R 0x2f\n");
  
    fflush(fps);
-   rewind(fps)
+   rewind(fps);
    values.ib=1234;
        while(values.ib==1234)
        {         fgets(buffer,sizeof(buffer),fps);
