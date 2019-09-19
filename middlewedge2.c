@@ -4,10 +4,6 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
- 
-void do_inputs(FILE * );
-void do_outputs(FILE *);
-int read_value(FILE *);
 
 struct inputs 
 {  int go;
@@ -15,6 +11,14 @@ struct inputs
    int ib;
    int op;
 };
+ 
+void do_inputs(FILE * );
+void do_outputs(FILE *);
+struct inputs read_allvalues(FILE *);
+int read_go(FILE *);
+
+
+
 
 int main(int argc, char * argv[])
 {   FILE * fpserial;
@@ -142,7 +146,7 @@ struct inputs read_allvalues(FILE * fps)
    rewind(fps)
    values.ib=1234;
        while(values.ib==1234)
-       {         fgets(bufferr,sizeof(buffer),fps);
+       {         fgets(buffer,sizeof(buffer),fps);
 	         sscanf(buffer,"R 0x2c %i",&values.go);
 	         sscanf(buffer,"R 0x26 %i",&values.op);
 	         sscanf(buffer,"R 0x20 %i",&values.ia);
