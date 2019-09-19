@@ -159,7 +159,7 @@ struct inputs read_allvalues(FILE * fps)
 void do_outputs(FILE * fpserial)
 {
    FILE * fpfile;
-   char *file="./i_o_directory/b1_outputs.txt";
+   char *file="./i_o_directory/b2_outputs.txt";
    int value=1234;
    static int initialized=0;
    static int last_value=1234;
