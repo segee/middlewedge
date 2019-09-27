@@ -87,14 +87,14 @@ void do_inputs(FILE * fpserial)
     else
     {
      how_many_the_same++;
-     if(how_many_the_same>100){ oldvalue=1234 ; }
+     if(how_many_the_same>1000){ oldvalue=1234 ; }
     }
    
  }
 //switch A is on port A  porta 0x22, ddra 0x21, pina 0x20
 //switch b is on port F portf 0x31, ddrf 0x30, pinf 0x2f)
 //op is port c bits 0-3 portc 0x28, ddrc 0x27, pinc 0x26
-// go is port e bit 0 port e 0x2e, ddre 0x2d, pind 0x2c
+// go is port e bit 0 port e 0x2e, ddre 0x2d, pine 0x2c
 int read_go(FILE * fps)
 {
   int value;
@@ -107,11 +107,11 @@ int read_go(FILE * fps)
     fflush(fps);
     initialized=1;
    }
-  fprintf(fps,"R 0x2e\n");
+  fprintf(fps,"R 0x2c\n");
   fflush(fps);
 // printf("About to read \n"); 
   rewind(fps); 
- do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x2e %i",&value)==0);  
+ do{ fgets(buffer,200,fps);}while(sscanf(buffer,"R 0x2c %i",&value)==0);  
 value &=1;
   //printf("Got the value %x\n",value);  
 
