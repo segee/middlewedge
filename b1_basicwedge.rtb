@@ -1,6 +1,16 @@
 gr 
 olddigit = 99
 theline$ = "0"
+
+
+ print "If you have not done so already:"
+ print "     1) This program should be running in the same directory as the simulator"
+ print "        (it requires rtb (return to basics) be installed) "
+ print "     2) You should have a directory in this directory that is ./i_o_directory"
+ print "     3) You should have a ramdrive mounted to that directory"
+ print "       mount -t tmpfs -o size=64k tmpfs ./i_o_directory"
+ print " You only need to do this once per boot"
+
 CYCLE 
   //
   digit = FN readoutputs()
