@@ -10,7 +10,8 @@ theline$ = "0"
  print "     3) You should have a ramdrive mounted to that directory"
  print "       mount -t tmpfs -o size=64k tmpfs ./i_o_directory"
  print " You only need to do this once per boot"
-
+ print " Press 0-f for the four switch inputs"
+ print " press esc to exit"
 CYCLE 
   //
   digit = FN readoutputs()
@@ -49,7 +50,7 @@ IF digit > 7 THEN
 ELSE 
   colour = Grey
 ENDIF 
-circle (10, 45, 7, 1)
+circle (10, 40, 7, 1)
 //
 IF digit > 3 THEN 
   digit = digit - 4
@@ -57,7 +58,7 @@ IF digit > 3 THEN
 ELSE 
   colour = Grey
 ENDIF 
-circle (30, 45, 7, 1)
+circle (30, 40, 7, 1)
 //
 IF digit > 1 THEN 
   digit = digit - 2
@@ -65,14 +66,14 @@ IF digit > 1 THEN
 ELSE 
   colour = Grey
 ENDIF 
-circle (50, 45, 7, 1)
+circle (50, 40, 7, 1)
 //
 IF digit > 0 THEN 
   colour = Red
 ELSE 
   colour = Grey
 ENDIF 
-circle (70, 45, 7, 1)
+circle (70, 40, 7, 1)
 ENDPROC 
 //
 
