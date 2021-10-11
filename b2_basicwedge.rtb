@@ -1,0 +1,158 @@
+gr 
+olddigit = 99
+theline$ = "0"
+
+
+ print "If you have not done so already:"
+ print "     1) This program should be running in the same directory as the simulator"
+ print "        (it requires rtb (return to basics) be installed) "
+ print "     2) You should have a directory in this directory that is ./i_o_directory"
+ print "     3) You should have a ramdrive mounted to that directory"
+ print "       mount -t tmpfs -o size=64k tmpfs ./i_o_directory"
+ print " You only need to do this once per boot"
+ print " press esc to exit"
+CYCLE 
+  //
+  digit = FN readoutputs()
+  //
+  IF digit <> olddigit THEN 
+    olddigit = digit
+    PROC drawleds()
+    update
+  ENDIF 
+  PROC doinputs ()
+REPEAT 
+//
+//
+//
+DEF FN readoutputs()
+//
+handle = openUp ("i_o_directory/b2_outputs.txt")
+IF eof (handle) = FALSE THEN 
+  input# handle, theline$
+ENDIF 
+close (handle)
+theval$ = RIGHT$ (theline$, 2)
+ms$ = LEFT$ (theval$,1)
+ls$ = RIGHT$ (theval$, 1)
+returnval= FN convert_hex(ms$)
+returnval = returnval *16
+returnval =returnval + FN convert_hex(ls$)
+= returnval
+
+DEF FN convert_hex( theval$)
+digit = ASC (theval$)
+IF digit > ASC ("9") THEN 
+  digit = digit - ASC ("a") + 10
+ELSE 
+  digit = digit - ASC ("0")
+ENDIF 
+if digit > 15 then
+    digit = 0
+endif 
+
+= digit
+//
+//
+DEF PROC drawleds()
+IF digit > 127 THEN 
+  digit = digit - 128
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+
+circle (4, 40, 3, 1)
+
+IF digit > 63 THEN 
+  digit = digit - 64
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+
+circle (14,40,3,1)
+
+//
+IF digit > 31 THEN 
+  digit = digit - 32
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+circle (24, 40, 3, 1)
+
+
+
+IF digit > 15 THEN 
+  digit = digit -16
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+
+circle (34,40,3,1)
+//
+IF digit > 7 THEN 
+  digit = digit - 8
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+circle (44, 40, 3, 1)
+
+
+//
+IF digit > 3 THEN 
+  digit = digit - 4
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+
+circle (54,40,3,1)
+//
+IF digit > 1 THEN 
+  digit = digit - 2
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+circle (64, 40, 3, 1)
+
+//
+IF digit > 0 THEN 
+  colour = Gray
+ELSE 
+  colour = Red
+ENDIF 
+
+
+circle (74,40,3,1)
+ENDPROC 
+//
+
+DEF PROC doinputs ()
+  myinput = INKEY
+  IF myinput <> -1 THEN 
+    handle = openUp("i_o_directory/b2_inputs.txt")
+    
+    IF eof (handle) = FALSE THEN 
+      input# handle, theline$
+      if right$(theline$,1) = "0" then
+         theline$ = "Go:0x1"
+      else
+          theline$="Go:0x0"
+      endif
+      rewind (handle)
+      print# handle, theline$
+      close (handle)
+    ENDIF 
+    
+    hvTab (0, 40)
+    PRINT theline$
+  ENDIF 
+ENDPROC
+
+
+
