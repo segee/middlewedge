@@ -20,14 +20,14 @@ CYCLE
     PROC drawleds()
     update
   ENDIF 
-  PROC doinputs ()
+//  PROC doinputs ()
 REPEAT 
 //
 //
 //
 DEF FN readoutputs()
 //
-handle = openUp ("i_o_directory/b2_outputs.txt")
+handle = openUp ("i_o_directory/b3_outputs.txt")
 IF eof (handle) = FALSE THEN 
   input# handle, theline$
 ENDIF 
