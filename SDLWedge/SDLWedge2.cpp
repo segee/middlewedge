@@ -24,15 +24,18 @@ SDL_Texture *ledOffTex;
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Event event;
-SDL_Surface *textSurface;
-SDL_Texture * textTexture;
+//SDL_Surface *textSurface;
+//SDL_Texture * textTexture;
 SDL_Rect rect;
 TTF_Font *gFont = NULL;
 SDLText *txtTitle;
 SDLText *txtFPS;
 SDLText *txtValue;
 SDLText *txtEdit;
+SDLText *txtHelp;
 
+int OnSpeed = 25;// it can be  1 to 255
+int OffSpeed = 25; // it can be  1 to 255
 bool isRunning;
 char strTmp[70];
 Uint32 frameStart;
@@ -54,6 +57,7 @@ bool inpwrite = false;
 void workonfiles();
 void read_from_file();
 void write_to_file();
+void initTexts();
 std::string to_lower(std::string my_str);
 
 void draw_rectangle(SDL_Surface* surface, int x, int y, int width, int height, int r, int g, int b);
@@ -62,6 +66,7 @@ void draw_circle(SDL_Surface* surface, int x, int y, int width, int height, int 
 
 int main(int argc, const char * argv[])
 {
+    menu = stHelp;
     init("Board2 GUI", SCREEN_WIDTH, SCREEN_HEIGHT);
     read_from_file();
 
@@ -89,6 +94,8 @@ void workonfiles()
 
     if(changed)
     {
+        sprintf(strTmp,"Go=%s  Op=%d  IA=%d  IB=%d  LED=%d", (go == 0 ) ? "Released" : "Pressed", op, ia, ib, led);
+        txtValue->render(strTmp);
         changed = false;
     }
     read_from_file();
@@ -116,11 +123,26 @@ void read_from_file()
         line = to_lower(line); // modifies str to lower case
         int n = value_line(line); //get the value
         if (n < 0) break;//the value is invalid
-        // check the proper parameter
-        if(line.find("go:")!=std::string::npos) go = (n == 0) ? 1 : 0;
-        if(line.find("op:")!=std::string::npos) op = n;
-        if(line.find("ia:")!=std::string::npos) ia = ~n & 0x0FF;
-        if(line.find("ib:")!=std::string::npos) ib = ~n & 0x0FF;
+        if(line.find("go:")!=std::string::npos)
+        {
+            if(go!=n)changed=true;
+            go = (n == 0) ? 1 : 0;
+        }
+        if(line.find("op:")!=std::string::npos)
+        {
+            if(op!=n)changed=true;
+            op = n;
+        }
+        if(line.find("ia:")!=std::string::npos)
+        {
+            if(ia != (~n & 0x0FF))changed=true;
+            ia = ~n & 0x0FF;
+        }
+        if(line.find("ib:")!=std::string::npos)
+        {
+            if(ib != (~n & 0x0FF))changed=true;
+            ib = ~n & 0x0FF;
+        }
     }
     myfile.close();
 
@@ -132,7 +154,11 @@ void read_from_file()
         int n = value_line(line); //get the value
         if (n < 0) break;//the value is invalid
         // check the proper parameter
-        if(line.find("leds")!=std::string::npos) led = ~n & 0x0FF;
+        if(line.find("leds")!=std::string::npos)
+        {
+            if(led != ~n & 0x0FF)changed=true;
+            led = ~n & 0x0FF;
+        }
     }
     myfile.close();
 }
@@ -214,7 +240,6 @@ bool init(const char* title, int w, int h)
     ledOnTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
     tmpSurface = IMG_Load("ledoff.png");
     ledOffTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
-
     if(!ledOnTex)
     {
         tmpSurface = SDL_CreateRGBSurface(0, 100, 100, 32, 0, 0, 0, 0);
@@ -228,48 +253,80 @@ bool init(const char* title, int w, int h)
         ledOffTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
     }
     SDL_SetTextureBlendMode(ledOnTex, SDL_BLENDMODE_BLEND);
+
     SDL_FreeSurface(tmpSurface);
 
     // initialize text location, colors, and where they are
     SDL_Color color = setRGBA(0,0,0,0);
-    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    txtTitle = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtTitle = new SDLText(renderer,gFont, color);
     txtTitle->setRect(150, 50,100,200);
-    txtFPS = new SDLText(textSurface,renderer,gFont,textTexture, color);
+
+    txtFPS = new SDLText(renderer,gFont, color);
     txtFPS->setRect(10, 0,100,200);
+
     color = setRGBA(0,0,255,0);
-    txtValue = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtValue = new SDLText(renderer,gFont, color);
     txtValue ->setRect(50, 400,100,200);
+
+    txtHelp = new SDLText(renderer,gFont, color);
+    txtHelp ->setRect(10, 100,100,200);
+
     color = setRGBA(255,0,0,0);
-    txtEdit  = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtEdit  = new SDLText(renderer,gFont, color);
     txtEdit  ->setRect(50, 440,100,200);
 
-    for(int i = 0; i < 8; i++)
+    initTexts();
+
+    for(int i = 0; i < ledcount; i++)
         alphaled[i] = 0;
 
     isRunning = true;
     return true;
 }
 
-//draw shapes
+void initTexts()
+{
+    sprintf(strTmp,"Board2 GUI with SDL");
+    txtTitle->render(strTmp);
+
+    const char *helpText = "1) This program should be running in the same directory\n    as the simulator\n2) You should have a directory in this directory\n   that is ./i_o_directory\n3) You should have a ramdrive mounted to that directory\nmount -t tmpfs -o size=64k tmpfs ./i_o_directory\nYou only need to do this once per boot\n\nPress A to enter ia; Press B to enter ib; Press G to switch go;\n Press O to select opcode; Press F1 to help shows up";
+    txtHelp->renderWrap(helpText);
+
+    sprintf(strTmp,"\n\nPress esc to exit");
+    txtEdit->renderWrap(strTmp);
+
+    sprintf(strTmp,"Go=%s  Op=%d  IA=%d  IB=%d  LED=%d", (go == 0 ) ? "Released" : "Pressed", op, ia, ib, led);
+    txtValue->render(strTmp);
+
+	//std::cout << "initTexts" << std::endl;
+}
+
+
 void render()
 {
+    if(menu == stHelp)
+    {
+        renderHelp();
+        return;
+    }
     int tmpled = led & 0x0FF;
+    if(OnSpeed < 1) OnSpeed = 1;
+    if(OffSpeed < 1) OffSpeed = 1;
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
-    for(int i=0; i<8; i++)
+    for(int i=0; i<ledcount; i++)
     {
         rect.x = i * rect.w;
 
         if(tmpled & 0x080)
         {
-            alphaled[i] += 5;
+            alphaled[i] += OnSpeed;
             if(alphaled[i] > 255) alphaled[i] = 255;
         }
         else
         {
-            alphaled[i] -= 1;
+            alphaled[i] -= OffSpeed;
             if(alphaled[i] < 0) alphaled[i] = 0;
         }
 
@@ -279,68 +336,124 @@ void render()
 
         tmpled = tmpled << 1;
     }
+
+	//sprintf(strTmp,"Board2 GUI with SDL");
+    //txtTitle->render(strTmp);
+    txtTitle->render();
+    txtFPS->render();
+
+    txtValue->render();
+    txtEdit->render();
+
+    SDL_RenderPresent(renderer);
+    frameNumb++;
+    frameTime = (SDL_GetTicks() - frameStart);
+    if(frameTime>= 1000)
+    {
+        frameStart = SDL_GetTicks();
+        FPSrate = frameNumb;
+        //std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
+        frameNumb = 0;
+        sprintf(strTmp,"FPS: %d", FPSrate);
+        txtFPS->render(strTmp);
+    }
+}
+
+void renderHelp()
+{
+    int y = 100;
+    SDL_RenderClear(renderer);
+
+//sprintf(strTmp,"Board12 GUI with SDL");
+    //txtTitle->render(strTmp);
+
+    txtTitle->render();
+    txtFPS->render();
+    txtHelp->render();
+    ////////////////////
+    //txtValue->render();
+    txtEdit->render();
+
+    /*
+
     sprintf(strTmp,"Board2 GUI with SDL");
     txtTitle->render(strTmp);
 
     sprintf(strTmp,"FPS: %d", FPSrate);
     txtFPS->render(strTmp);
-    sprintf(strTmp,"Go=%s  Op=%d  IA=%d  IB=%d  LED=%d", (go == 0 ) ? "Released" : "Pressed", op, ia, ib, led);
+
+    ////////////////////
+    txtValue->setColor(0,0,255,0);
+    txtValue->setRect(10, y,100,200); y+=40;
+    sprintf(strTmp,"1) This program should be running in the same directory ");
+    txtValue->render(strTmp);
+    txtValue->setRect(10, y,100,200); y+=40;
+    sprintf(strTmp,"    as the simulator");
     txtValue->render(strTmp);
 
-    if( menu == stEmpty)
-    {
-        sprintf(strTmp,"  ");
-    }
-    else if( menu == stGoPress)
-    {
-        sprintf(strTmp,"Go Pressed");
-    }
-    else if( menu == stGoRelease)
-    {
-        sprintf(strTmp,"Go Released");
-    }
-    else if( menu == stIA)
-    {
-        sprintf(strTmp,"IA = %d",ival );
-    }
-    else if( menu == stIB)
-    {
-        sprintf(strTmp,"IB = %d",ival );
-    }
-    else if( menu == stOp)
-    {
-        sprintf(strTmp,"Op = %d",ival );
-    }
-    else if( menu == stExit )
-    {
-        sprintf(strTmp,"Quit ? (y / n)");
-    }
-    else
-    {
-        sprintf(strTmp,"  ");
-    }
-    txtEdit->render(strTmp);
+    txtValue->setRect(10, y,100,200);y+=40;
+    sprintf(strTmp,"2) You should have a directory in this directory");
+    txtValue->render(strTmp);
+    txtValue->setRect(10, y,100,200);y+=40;
+    sprintf(strTmp,"    that is ./i_o_directory");
+    txtValue->render(strTmp);
 
+
+    txtValue->setRect(10, y,100,200);y+=40;
+    sprintf(strTmp,"3) You should have a ramdrive mounted to that directory");
+    txtValue->render(strTmp);
+
+    txtValue->setRect(10, y,100,200);y+=40;
+    sprintf(strTmp,"mount -t tmpfs -o size=64k tmpfs ./i_o_directory");
+    txtValue->render(strTmp);
+
+    txtValue->setRect(10, y,100,200);y+=70;
+    sprintf(strTmp,"You only need to do this once per boot");
+    txtValue->render(strTmp);
+
+    txtValue->setRect(50, y,100,200);y+=40;
+    sprintf(strTmp,"Press A to enter ia; Press B to enter ib; Press O to elect opcode; ");
+    txtValue->render(strTmp);
+
+    txtValue->setRect(50, y,100,200);y+=70;
+    sprintf(strTmp,"Press G to switch go; Press F1 to help shows up");
+    txtValue->render(strTmp);
+
+    txtValue->setRect(300, y,100,200);
+    txtValue->setColor(255,0,0,0);
+    sprintf(strTmp,"Press esc to exit");
+    txtValue->render(strTmp);
+    */
+    /////////////////////
+
+    //txtValue ->setRect(50, 400,100,200);
     SDL_RenderPresent(renderer);
-
-    if(frameNumb++>=99)
+    frameNumb++;
+    frameTime = (SDL_GetTicks() - frameStart);
+    if(frameTime>= 1000)
     {
-        frameTime = (SDL_GetTicks() - frameStart);
         frameStart = SDL_GetTicks();
-        FPSrate = frameTime;
-        std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
+        FPSrate = frameNumb;
+        //std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
         frameNumb = 0;
+        sprintf(strTmp,"FPS: %d", FPSrate);
+        txtFPS->render(strTmp);
     }
 }
+
 
 //get rid of allocated memory 
 void clean()
 {
-    SDL_DestroyTexture(textTexture);
+    txtEdit->clean();
+    txtFPS->clean();
+    txtTitle->clean();
+    txtValue->clean();
+    txtHelp->clean();
+
     SDL_DestroyTexture(ledOffTex);
     SDL_DestroyTexture(ledOnTex);
-    SDL_FreeSurface(textSurface);
-	TTF_CloseFont( gFont );
+    TTF_CloseFont( gFont );
 	gFont = NULL;
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
@@ -350,45 +463,52 @@ void clean()
 
 void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
 {
+
+    //Select surfaces based on key press
     switch( key )
     {
-
+        case SDLK_F1:
+            initTexts();
+            menu = stHelp;
+            break;
         case SDLK_g:
-            if(menu != stExit)
+            if(menu == stExit || menu == stHelp) break;
+            if(go == 0)
             {
-                if(go == 0)
-                {
-                    go = 1;
-                    menu = stGoPress;
-                }
-                else
-                {
-                    go = 0;
-                    menu = stGoRelease;
-                }
-                *changed = true;
-                *write = true;
+                go = 1;
+                menu = stGoPress;
             }
+            else
+            {
+                go = 0;
+                menu = stGoRelease;
+            }
+            *changed = true;
+            *write = true;
         break;
 
         case SDLK_a:
+            if(menu == stHelp) break;
             if(menu != stExit) menu = stIA;
             ival = 0;
             *changed = true;
         break;
 
         case SDLK_b:
+            if(menu == stHelp) break;
             if(menu != stExit) menu = stIB;
             ival = 0;
             *changed = true;
         break;
 
         case SDLK_o:
+            if(menu == stHelp) break;
             if(menu != stExit) menu = stOp;
             ival = 0;
             *changed = true;
         break;
         case SDLK_l:
+            if(menu == stHelp) break;
             if(menu != stExit) menu = stEmpty;
             ival = 0;
             *changed = true;
@@ -398,6 +518,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_RETURN:
         case SDLK_RETURN2:
         case SDLK_KP_ENTER:
+            if(menu == stHelp) break;
             if(menu != stExit)
             {
                 *changed = true;
@@ -405,7 +526,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
             }
         break;
         case SDLK_ESCAPE:
-            if(menu == stIA || menu == stIB || menu == stOp || menu == stExit)
+            if(menu == stIA || menu == stIB || menu == stOp || menu == stExit || menu == stHelp)
             {
                 menu = stEmpty;
             }
@@ -413,14 +534,26 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
             {
                 menu = stExit;
             }
+            //std::cout << "esc press" << std::endl;
+            if( menu == stExit )
+            {
+                sprintf(strTmp,"Quit ? (y / n)");
+            }
+            else
+            {
+                sprintf(strTmp,"  ");
+            }
+            txtEdit->render(strTmp);
         break;
         case SDLK_y:
+            if(menu == stHelp) break;
             if(menu == stExit)
             {
                 quit();
             }
         break;
         case SDLK_n:
+            if(menu == stHelp) break;
             menu = stEmpty;
         break;
         case SDLK_0:
@@ -433,6 +566,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_7:
         case SDLK_8:
         case SDLK_9:
+            if(menu == stHelp) break;
             ival = ival * 10 + (key -48);
             if(ival>255 || ival<0) ival = 0;
             if(!(menu == stIA || menu == stIB || menu == stOp)) ival = 0;
@@ -448,7 +582,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_KP_7:
         case SDLK_KP_8:
         case SDLK_KP_9:
-
+            if(menu == stHelp) break;
             ival = ival * 10 + (int) ( (key - SDLK_KP_1 + 1) % 10);
             if(ival>255 || ival<0) ival = 0;
             if(!(menu == stIA || menu == stIB || menu == stOp)) ival = 0;
@@ -456,11 +590,13 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         break;
         case SDLK_DELETE:
         case SDLK_BACKSPACE:
+            if(menu == stHelp) break;
             if(menu == stIA || menu == stIB || menu == stOp) ival = ival / 10;
             *changed = true;
         break;
 
         default:
+            if(menu == stHelp) break;
             if(menu != stExit)
             {
                 ival = 0;
@@ -468,5 +604,47 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
                 *changed = true;
             }
         break;
+    }
+
+    if( menu == stHelp)
+    {
+        sprintf(strTmp,"\n\nPress esc to exit");
+        txtEdit->renderWrap(strTmp);
+    }
+    else
+    {
+        if( menu == stEmpty)
+        {
+            sprintf(strTmp,"  ");
+        }
+        else if( menu == stGoPress)
+        {
+            sprintf(strTmp,"Go Pressed");
+        }
+        else if( menu == stGoRelease)
+        {
+            sprintf(strTmp,"Go Released");
+        }
+        else if( menu == stIA)
+        {
+            sprintf(strTmp,"IA = %d",ival );
+        }
+        else if( menu == stIB)
+        {
+            sprintf(strTmp,"IB = %d",ival );
+        }
+        else if( menu == stOp)
+        {
+            sprintf(strTmp,"Op = %d",ival );
+        }
+        else if( menu == stExit )
+        {
+            sprintf(strTmp,"Quit ? (y / n)");
+        }
+        else
+        {
+            sprintf(strTmp,"  ");
+        }
+        txtEdit->render(strTmp);
     }
 }

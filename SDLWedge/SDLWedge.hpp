@@ -18,8 +18,8 @@ extern const int ledcount;
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
 extern SDL_Event event;
-extern SDL_Surface *textSurface;
-extern SDL_Texture * textTexture;
+//extern SDL_Surface *textSurface;
+//extern SDL_Texture * textTexture;
 extern SDL_Rect rect;
 extern TTF_Font *gFont;
 extern SDL_Texture *ledOnTex;
@@ -34,6 +34,7 @@ bool init(const char* title, int w, int h);
 void handleEvents();
 void update();
 void render();
+void renderHelp();
 void clean();
 void quit();
 
@@ -68,6 +69,7 @@ void draw_circle(SDL_Surface* surface, int x, int y, int width, int height, int 
         }
     }
     memcpy(surface->pixels, pixels.data(), surface->pitch * surface->h);
+
     SDL_UnlockSurface(surface);
 }
 
@@ -87,6 +89,7 @@ void draw_rectangle(SDL_Surface* surface, int x, int y, int width, int height, i
         }
     }
     memcpy(surface->pixels, pixels.data(), surface->pitch * surface->h);
+
     SDL_UnlockSurface(surface);
 }
 
@@ -134,19 +137,17 @@ SDL_Color setRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 class SDLText {
     public:
         SDLText()  ;
-        SDLText(SDL_Surface * _Surface, SDL_Renderer *_renderer, TTF_Font *_gFont, SDL_Texture * _texture, SDL_Color _color)
+        SDLText(SDL_Renderer *_renderer, TTF_Font *_gFont, SDL_Color _color)
         {
-            textSurface = _Surface;
             renderer = _renderer;
             gFont = _gFont;
-            texture = _texture;
             color = _color;
-            texture = SDL_CreateTextureFromSurface(renderer, textSurface);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
         }
 
         ~SDLText();
 
-        SDL_Surface *textSurface;
+        SDL_Surface *surface;
         char * text;
         SDL_Rect rect;
         SDL_Renderer *renderer;
@@ -185,7 +186,29 @@ class SDLText {
             color.b = b;
             color.a = a;
         }
+        void renderWrap(const char * text)
+        {
+            if( texture != NULL )
+            {
+                SDL_DestroyTexture( texture );
+                texture = NULL;
+            }
+            if(!(surface=TTF_RenderText_Blended_Wrapped(gFont,text,color,SCREEN_WIDTH - rect.x)))
+            {
+            //handle error here, perhaps print TTF_GetError at least
+            }
+            else {
+            //SDL_BlitSurface(text_surface,NULL,rect,NULL);
+            //perhaps we can reuse it, but I assume not for simplicity.
 
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+            }
+            //SDL_Surface* textSurface = TTF_RenderText_Blended( gFont, textureText.c_str(), textColor );
+            setRect(surface->h,surface->w);
+            SDL_RenderCopy(renderer, texture, NULL, &rect);
+            SDL_FreeSurface( surface );
+            //SDL_RenderPresent(renderer);
+        }
         void render(char * text)
         {
             if( texture != NULL )
@@ -193,33 +216,27 @@ class SDLText {
                 SDL_DestroyTexture( texture );
                 texture = NULL;
             }
-            if(!(textSurface=TTF_RenderText_Blended(gFont,text,color))) {
+            if(!(surface=TTF_RenderText_Blended(gFont,text,color))) {
             //handle error here, perhaps print TTF_GetError at least
             } else {
             //SDL_BlitSurface(text_surface,NULL,rect,NULL);
-            //perhaps we can reuse it, but I assume not for simplicity.
-            texture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+            	texture = SDL_CreateTextureFromSurface(renderer, surface);
             }
             //SDL_Surface* textSurface = TTF_RenderText_Blended( gFont, textureText.c_str(), textColor );
-            setRect(textSurface->h,textSurface->w);
+            setRect(surface->h,surface->w);
             SDL_RenderCopy(renderer, texture, NULL, &rect);
-            SDL_FreeSurface( textSurface );
+            SDL_FreeSurface( surface );
             //SDL_RenderPresent(renderer);
         }
         void render()
         {
-            if(!(textSurface=TTF_RenderText_Solid(gFont,text,color))) {
-            //handle error here, perhaps print TTF_GetError at least
-            } else {
-            //SDL_BlitSurface(text_surface,NULL,rect,NULL);
-            //perhaps we can reuse it, but I assume not for simplicity.
-                texture = SDL_CreateTextureFromSurface(renderer, textSurface);
-            }
-            //SDL_Surface* textSurface = TTF_RenderText_Blended( gFont, textureText.c_str(), textColor );
-
             SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-            SDL_RenderPresent(renderer);
+        }
+        void clean()
+        {
+            //SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
         }
 };
 
@@ -231,6 +248,7 @@ enum StatusLabel
     stIA,
     stIB,
     stOp,
+    stHelp,
     stExit
 };
 

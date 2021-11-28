@@ -22,18 +22,20 @@
 
 SDL_Texture *ledOnTex;
 SDL_Texture *ledOffTex;
+
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Event event;
-SDL_Surface *textSurface;
-SDL_Texture * textTexture;
 SDL_Rect rect;
 TTF_Font *gFont = NULL;
 SDLText *txtTitle;
 SDLText *txtFPS;
 SDLText *txtValue;
 SDLText *txtEdit;
+SDLText *txtHelp;
 
+int OnSpeed = 25;// it can be  1 to 255
+int OffSpeed = 25; // it can be  1 to 255
 bool isRunning;
 char strTmp[70];
 Uint32 frameStart;
@@ -51,17 +53,19 @@ int menu = stEmpty;
 int valu = 0;
 bool changed = false;
 bool inpwrite = false;
-
 void workonfiles();
 void read_from_file();
 void write_to_file();
+void initTexts();
 std::string to_lower(std::string my_str);
+
 void draw_rectangle(SDL_Surface* surface, int x, int y, int width, int height, int r, int g, int b);
 void draw_circle(SDL_Surface* surface, int x, int y, int width, int height, int r, int g, int b);
 
 
 int main(int argc, const char * argv[])
 {
+    menu = stHelp;
     init("Board1 GUI", SCREEN_WIDTH, SCREEN_HEIGHT);
     read_from_file();
 
@@ -77,6 +81,7 @@ int main(int argc, const char * argv[])
 
 void workonfiles()
 {
+
     if(inpwrite )
     {
         write_to_file();
@@ -85,6 +90,8 @@ void workonfiles()
 
     if(changed)
     {
+        sprintf(strTmp,"Switch=%x  LED=%x", in & 0x0f, led & 0x0f);
+        txtValue->render(strTmp);
         changed = false;
     }
     read_from_file();
@@ -112,7 +119,11 @@ void read_from_file()
         line = to_lower(line); // modifies str to lower case
         int n = value_line(line); //get the value
         if (n < 0) break; //the value is invalid
-        if(line.find("switches:")!=std::string::npos) in = n; // check the proper parameter
+        if(line.find("switches:")!=std::string::npos) // check the proper parameter
+        {
+            if(in!=n)changed=true;
+            in = n;
+        }
     }
     myfile.close();
     //read the input file line by line
@@ -123,7 +134,11 @@ void read_from_file()
         line = to_lower(line); // modifies str to lower case
         int n = value_line(line);
         if (n < 0) break;
-        if(line.find("leds")!=std::string::npos) led = n;
+        if(line.find("leds")!=std::string::npos)
+        {
+            if(led!=n)changed=true;
+            led = n;
+        }
     }
     myfile.close();
 
@@ -215,21 +230,30 @@ bool init(const char* title, int w, int h)
         ledOffTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
     }
     SDL_SetTextureBlendMode(ledOnTex, SDL_BLENDMODE_BLEND);
+
     SDL_FreeSurface(tmpSurface);
 
     // initialize text location, colors, and where they are
     SDL_Color color = setRGBA(0,0,0,0);
-    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    txtTitle = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtTitle = new SDLText(renderer,gFont, color);
     txtTitle->setRect(150, 50,100,200);
-    txtFPS = new SDLText(textSurface,renderer,gFont,textTexture, color);
+
+    txtFPS = new SDLText(renderer,gFont, color);
     txtFPS->setRect(10, 0,100,200);
+
     color = setRGBA(0,0,255,0);
-    txtValue = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtValue = new SDLText(renderer,gFont, color);
     txtValue ->setRect(50, 400,100,200);
+
+    txtHelp = new SDLText(renderer,gFont, color);
+    txtHelp ->setRect(10, 100,100,200);
+
     color = setRGBA(255,0,0,0);
-    txtEdit  = new SDLText(textSurface,renderer,gFont,textTexture, color);
+    txtEdit  = new SDLText(renderer,gFont, color);
     txtEdit  ->setRect(50, 440,100,200);
+
+
+    initTexts();
 
     for(int i = 0; i < ledcount; i++)
         alphaled[i] = 0;
@@ -238,10 +262,33 @@ bool init(const char* title, int w, int h)
     return true;
 }
 
-//draw shapes
+void initTexts()
+{
+    sprintf(strTmp,"Board1 GUI with SDL");
+    txtTitle->render(strTmp);
+
+    const char *helpText = "1) This program should be running in the same directory\n    as the simulator\n2) You should have a directory in this directory\n   that is ./i_o_directory\n3) You should have a ramdrive mounted to that directory\nmount -t tmpfs -o size=64k tmpfs ./i_o_directory\nYou only need to do this once per boot\n\nPress 0-f for the four switch inputs\nPress F1 to help shows up";
+    txtHelp->renderWrap(helpText);
+
+    sprintf(strTmp,"\n\nPress esc to exit");
+    txtEdit->renderWrap(strTmp);
+
+    sprintf(strTmp,"Switch=%x  LED=%x", in & 0x0f, led & 0x0f);
+    txtValue->render(strTmp);
+    //std::cout << "initTexts" << std::endl;
+}
+
+
 void render()
 {
+    if(menu == stHelp)
+    {
+        renderHelp();
+        return;
+    }
     int tmpled = led & 0x0F;
+    if(OnSpeed < 1) OnSpeed = 1;
+    if(OffSpeed < 1) OffSpeed = 1;
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
@@ -251,12 +298,12 @@ void render()
 
         if(tmpled & 0x08)
         {
-            alphaled[i] += 5;
+            alphaled[i] += OnSpeed;
             if(alphaled[i] > 255) alphaled[i] = 255;
         }
         else
         {
-            alphaled[i] -= 1;
+            alphaled[i] -= OffSpeed;
             if(alphaled[i] < 0) alphaled[i] = 0;
         }
 
@@ -266,43 +313,73 @@ void render()
 
         tmpled = tmpled << 1;
     }
-    sprintf(strTmp,"Board1 GUI with SDL");
-    txtTitle->render(strTmp);
 
-    sprintf(strTmp,"FPS: %d", FPSrate);
-    txtFPS->render(strTmp);
-    sprintf(strTmp,"Switch=%x  LED=%x", in & 0x0f, led & 0x0f);
-    txtValue->render(strTmp);
+    //sprintf(strTmp,"Board1 GUI with SDL");
+    //txtTitle->render(strTmp);
+    txtTitle->render();
+    txtFPS->render();
 
-    if( menu == stExit )
-    {
-        sprintf(strTmp,"Quit ? (y / n)");
-    }
-    else
-    {
-        sprintf(strTmp,"  ");
-    }
-    txtEdit->render(strTmp);
+    txtValue->render();
+
+    txtEdit->render();
 
     SDL_RenderPresent(renderer);
-
-    if(frameNumb++>=99)
+    frameNumb++;
+    frameTime = (SDL_GetTicks() - frameStart);
+    if(frameTime>= 1000)
     {
-        frameTime = (SDL_GetTicks() - frameStart);
         frameStart = SDL_GetTicks();
-        FPSrate = frameTime;
-        std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
+        FPSrate = frameNumb;
+        //std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
         frameNumb = 0;
+        sprintf(strTmp,"FPS: %d", FPSrate);
+        txtFPS->render(strTmp);
+    }
+}
+
+void renderHelp()
+{
+    int y = 100;
+    SDL_RenderClear(renderer);
+
+
+    //sprintf(strTmp,"Board11 GUI with SDL");
+    //txtTitle->render(strTmp);
+
+    txtTitle->render();
+    txtFPS->render();
+    txtHelp->render();
+    ////////////////////
+    //txtValue->render();
+    txtEdit->render();
+    /////////////////////
+
+    //txtValue ->setRect(50, 400,100,200);
+    SDL_RenderPresent(renderer);
+    frameNumb++;
+    frameTime = (SDL_GetTicks() - frameStart);
+    if(frameTime>= 1000)
+    {
+        frameStart = SDL_GetTicks();
+        FPSrate = frameNumb;
+        //std::cout << ":> " << FPSrate << "   , takes " << frameTime  << "ms for " << frameNumb <<" frames"<< std::endl;
+        frameNumb = 0;
+        sprintf(strTmp,"FPS: %d", FPSrate);
+        txtFPS->render(strTmp);
     }
 }
 //get rid of allocated memory by SDL
 void clean()
 {
-    SDL_DestroyTexture(textTexture);
+    txtEdit->clean();
+    txtFPS->clean();
+    txtTitle->clean();
+    txtValue->clean();
+    txtHelp->clean();
+
     SDL_DestroyTexture(ledOffTex);
     SDL_DestroyTexture(ledOnTex);
-    SDL_FreeSurface(textSurface);
-	TTF_CloseFont( gFont );
+    TTF_CloseFont( gFont );
 	gFont = NULL;
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
@@ -312,14 +389,21 @@ void clean()
 
 void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
 {
+    //Select surfaces based on key press
     switch( key )
     {
+
+        case SDLK_F1:
+            initTexts();
+            menu = stHelp;
+            break;
         case SDLK_a:
         case SDLK_b:
         case SDLK_c:
         case SDLK_d:
         case SDLK_e:
         case SDLK_f:
+            if(menu == stHelp) break;
             if(menu != stExit)
             {
                 in = (key - SDLK_a) + 10;
@@ -329,7 +413,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         break;
 
         case SDLK_ESCAPE:
-            if(menu == stExit)
+            if(menu == stExit || menu == stHelp)
             {
                 menu = stEmpty;
             }
@@ -337,14 +421,26 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
             {
                 menu = stExit;
             }
+            //std::cout << "esc press" << std::endl;
+            if( menu == stExit )
+            {
+                sprintf(strTmp,"Quit ? (y / n)");
+            }
+            else
+            {
+                sprintf(strTmp,"  ");
+            }
+            txtEdit->render(strTmp);
         break;
         case SDLK_y:
+            if(menu == stHelp) break;
             if(menu == stExit)
             {
                 quit();
             }
         break;
         case SDLK_n:
+            if(menu == stHelp) break;
             menu = stEmpty;
         break;
         case SDLK_0:
@@ -357,6 +453,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_7:
         case SDLK_8:
         case SDLK_9:
+            if(menu == stHelp) break;
             in = (key -SDLK_0);
             *write = true;
             *changed = true;
@@ -371,12 +468,14 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_KP_7:
         case SDLK_KP_8:
         case SDLK_KP_9:
+            if(menu == stHelp) break;
             in = (key -  SDLK_KP_1 + 1) % 10;
             *write = true;
             *changed = true;
         break;
 
         default:
+            if(menu == stHelp) break;
             if(menu != stExit)
             {
                 ival = 0;
