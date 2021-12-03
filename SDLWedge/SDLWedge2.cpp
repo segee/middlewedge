@@ -15,17 +15,19 @@
 #include <stdio.h>
 //#include <unistd.h>
 #include "SDLWedge.hpp"
+#include "font.h"
 #include <stdio.h>
 
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
 SDL_Texture *ledOnTex;
 SDL_Texture *ledOffTex;
+SDL_Texture *fontTex;
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Event event;
-//SDL_Surface *textSurface;
-//SDL_Texture * textTexture;
 SDL_Rect rect;
 TTF_Font *gFont = NULL;
 SDLText *txtTitle;
@@ -42,10 +44,9 @@ Uint32 frameStart;
 int frameTime = 0;
 int frameNumb = 0;
 int FPSrate = 0;
-int alphaled [8];
 const int ledcount = 8;
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+int alphaled [ledcount];
+
 
 int led = 0;
 int go=0,op=0,ia=0,ib=0;
@@ -89,6 +90,11 @@ void workonfiles()
         if(menu == stOp) op = ival;
         if(!((menu == stGoPress) || (menu == stGoRelease))) menu = stEmpty;
         write_to_file();
+        if(menu == stEmpty)
+        {
+            sprintf(strTmp,"  ");
+            txtEdit->render(strTmp);
+        }
         inpwrite  = false;
     }
 
@@ -182,7 +188,7 @@ void write_to_file()
 bool init(const char* title, int w, int h)
 {
     //int flags = 0;
-    rect.h = SCREEN_WIDTH / 8;
+    rect.h = SCREEN_WIDTH / ledcount;
     rect.w = rect.h;
     rect.y = 150;
     isRunning = false;
@@ -215,17 +221,20 @@ bool init(const char* title, int w, int h)
         if( TTF_Init() == -1 )
         {
             std::cout << "Couldn't  initialize SDL_ttf." << TTF_GetError() << std::endl;
-            return false;
+            //return false;
         }
         else
         {
-            gFont = TTF_OpenFont( "OpenSans-Regular.ttf", 28 );
 
-            if( gFont == NULL )
-            {
-                std::cout << "Couldn't  open font: " << TTF_GetError() << std::endl;
-                return false;
-            }
+            try_open_ttf_font();
+
+            //gFont = TTF_OpenFont( "OpenSans-Regular.ttf", 28 );
+
+            //if( gFont == NULL )
+            //{
+            //    std::cout << "Couldn't  open font: " << TTF_GetError() << std::endl;
+                //return false;
+            //}
         }
 
     }
@@ -252,6 +261,13 @@ bool init(const char* title, int w, int h)
         draw_circle(tmpSurface,0,0,100,100, 99, 10, 10);
         ledOffTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
     }
+    if(gFont == NULL)
+    {
+        tmpSurface = SDL_CreateRGBSurface(0, 95 * 8,13 * 3, 32, 0, 0, 0, 0);
+        draw_font(tmpSurface,0,0,95 * 8,13 * 3);
+        fontTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
+        SDL_SetTextureBlendMode(fontTex, SDL_BLENDMODE_BLEND);
+    }
     SDL_SetTextureBlendMode(ledOnTex, SDL_BLENDMODE_BLEND);
 
     SDL_FreeSurface(tmpSurface);
@@ -262,18 +278,19 @@ bool init(const char* title, int w, int h)
     txtTitle->setRect(150, 50,100,200);
 
     txtFPS = new SDLText(renderer,gFont, color);
-    txtFPS->setRect(10, 0,100,200);
+    txtFPS->setRect(10, 5,100,200);
 
     color = setRGBA(0,0,255,0);
     txtValue = new SDLText(renderer,gFont, color);
-    txtValue ->setRect(50, 400,100,200);
+    txtValue ->setRect(10, 400,100,200);
 
     txtHelp = new SDLText(renderer,gFont, color);
     txtHelp ->setRect(10, 100,100,200);
 
     color = setRGBA(255,0,0,0);
     txtEdit  = new SDLText(renderer,gFont, color);
-    txtEdit  ->setRect(50, 440,100,200);
+    txtEdit  ->setRect(10, 440,100,200);
+
 
     initTexts();
 
@@ -289,10 +306,10 @@ void initTexts()
     sprintf(strTmp,"Board2 GUI with SDL");
     txtTitle->render(strTmp);
 
-    const char *helpText = "1) This program should be running in the same directory\n    as the simulator\n2) You should have a directory in this directory\n   that is ./i_o_directory\n3) You should have a ramdrive mounted to that directory\nmount -t tmpfs -o size=64k tmpfs ./i_o_directory\nYou only need to do this once per boot\n\nPress A to enter ia; Press B to enter ib; Press G to switch go;\n Press O to select opcode; Press F1 to help shows up";
+    const char *helpText = "1) This program should be running in the same directory\n    as the simulator\n2) You should have a directory in this directory\n   that is ./i_o_directory\n3) You should have a ramdrive mounted to that directory\nmount -t tmpfs -o size=64k tmpfs ./i_o_directory\nYou only need to do this once per boot\n\nPress A to enter ia; Press B to enter ib;\nPress G to switch go; Press O to select opcode;\nPress F1 to help shows up";
     txtHelp->renderWrap(helpText);
 
-    sprintf(strTmp,"\n\nPress esc to exit");
+    sprintf(strTmp,"\n\n                     Press esc to exit");
     txtEdit->renderWrap(strTmp);
 
     sprintf(strTmp,"Go=%s  Op=%d  IA=%d  IB=%d  LED=%d", (go == 0 ) ? "Released" : "Pressed", op, ia, ib, led);
@@ -313,7 +330,7 @@ void render()
     if(OnSpeed < 1) OnSpeed = 1;
     if(OffSpeed < 1) OffSpeed = 1;
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
     for(int i=0; i<ledcount; i++)
     {
@@ -453,6 +470,7 @@ void clean()
 
     SDL_DestroyTexture(ledOffTex);
     SDL_DestroyTexture(ledOnTex);
+    SDL_DestroyTexture(fontTex);
     TTF_CloseFont( gFont );
 	gFont = NULL;
     SDL_DestroyWindow(window);
@@ -555,6 +573,8 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_n:
             if(menu == stHelp) break;
             menu = stEmpty;
+            sprintf(strTmp,"  ");
+            txtEdit->render(strTmp);
         break;
         case SDLK_0:
         case SDLK_1:
@@ -608,7 +628,7 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
 
     if( menu == stHelp)
     {
-        sprintf(strTmp,"\n\nPress esc to exit");
+        sprintf(strTmp,"\n\n                     Press esc to exit");
         txtEdit->renderWrap(strTmp);
     }
     else

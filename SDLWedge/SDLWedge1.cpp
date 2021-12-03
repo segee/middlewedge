@@ -15,6 +15,7 @@
 #include <stdio.h>
 //#include <unistd.h>
 #include "SDLWedge.hpp"
+#include "font.h"
 #include <stdio.h>
 
 #define SCREEN_WIDTH 800
@@ -22,6 +23,7 @@
 
 SDL_Texture *ledOnTex;
 SDL_Texture *ledOffTex;
+SDL_Texture *fontTex;
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -61,6 +63,7 @@ std::string to_lower(std::string my_str);
 
 void draw_rectangle(SDL_Surface* surface, int x, int y, int width, int height, int r, int g, int b);
 void draw_circle(SDL_Surface* surface, int x, int y, int width, int height, int r, int g, int b);
+void draw_font(SDL_Surface* surface, int x, int y, int width, int height);
 
 
 int main(int argc, const char * argv[])
@@ -193,17 +196,18 @@ bool init(const char* title, int w, int h)
         if( TTF_Init() == -1 )
         {
             std::cout << "Couldn't  initialize SDL_ttf." << TTF_GetError() << std::endl;
-            return false;
+            //return false;
         }
         else
         {
-            gFont = TTF_OpenFont( "OpenSans-Regular.ttf", 28 );
+            try_open_ttf_font();
+            //gFont = TTF_OpenFont( "OpenSans-Regular.ttf", 28 );
 
-            if( gFont == NULL )
-            {
-                std::cout << "Couldn't  open font: " << TTF_GetError() << std::endl;
-                return false;
-            }
+            //if( gFont == NULL )
+            //{
+            //    std::cout << "Couldn't  open font: " << TTF_GetError() << std::endl;
+                //return false;
+            //}
         }
 
     }
@@ -229,6 +233,13 @@ bool init(const char* title, int w, int h)
         draw_circle(tmpSurface,0,0,100,100, 99, 10, 10);
         ledOffTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
     }
+    if(gFont == NULL)
+    {
+        tmpSurface = SDL_CreateRGBSurface(0, 95 * 8,13 * 3, 32, 0, 0, 0, 0);
+        draw_font(tmpSurface,0,0,95 * 8,13 * 3);
+        fontTex = SDL_CreateTextureFromSurface(renderer, tmpSurface);
+        SDL_SetTextureBlendMode(fontTex, SDL_BLENDMODE_BLEND);
+    }
     SDL_SetTextureBlendMode(ledOnTex, SDL_BLENDMODE_BLEND);
 
     SDL_FreeSurface(tmpSurface);
@@ -239,7 +250,7 @@ bool init(const char* title, int w, int h)
     txtTitle->setRect(150, 50,100,200);
 
     txtFPS = new SDLText(renderer,gFont, color);
-    txtFPS->setRect(10, 0,100,200);
+    txtFPS->setRect(10, 5,100,200);
 
     color = setRGBA(0,0,255,0);
     txtValue = new SDLText(renderer,gFont, color);
@@ -290,7 +301,7 @@ void render()
     if(OnSpeed < 1) OnSpeed = 1;
     if(OffSpeed < 1) OffSpeed = 1;
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
     for(int i=0; i<ledcount; i++)
     {
@@ -340,6 +351,7 @@ void render()
 void renderHelp()
 {
     int y = 100;
+    //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
 
@@ -379,6 +391,7 @@ void clean()
 
     SDL_DestroyTexture(ledOffTex);
     SDL_DestroyTexture(ledOnTex);
+    SDL_DestroyTexture(fontTex);
     TTF_CloseFont( gFont );
 	gFont = NULL;
     SDL_DestroyWindow(window);
@@ -442,6 +455,8 @@ void check_keyboard(SDL_Keycode key, bool *changed, bool *write)
         case SDLK_n:
             if(menu == stHelp) break;
             menu = stEmpty;
+            sprintf(strTmp,"  ");
+            txtEdit->render(strTmp);
         break;
         case SDLK_0:
         case SDLK_1:
